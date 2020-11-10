@@ -1,5 +1,5 @@
 ;%include "/usr/local/share/csc314/asm_io.inc"
-
+; %include "/usr/include/unistd.h"
 
 ; the file that stores the initial state
 %define BOARD_FILE 'board.txt'
@@ -14,8 +14,8 @@
 
 ; the player starting position.
 ; top left is considered (0,0)
-%define STARTX 1
-%define STARTY 1
+%define STARTX 20
+%define STARTY 10
 
 ; these keys do things
 %define EXITCHAR 'x'
@@ -56,6 +56,9 @@ segment .bss
 	xpos	resd	1
 	ypos	resd	1
 
+	snake_x resd 100
+	snake_y resd 100
+
 segment .text
 
 	global	main
@@ -63,6 +66,7 @@ segment .text
 	global  raw_mode_off
 	global  init_board
 	global  render
+	; global sleep
 
 	extern	system
 	extern	putchar
@@ -72,6 +76,7 @@ segment .text
 	extern	fread
 	extern	fgetc
 	extern	fclose
+	extern usleep
 
 main:
 	enter	0,0
@@ -151,6 +156,9 @@ main:
 			mov		DWORD [xpos], esi
 			mov		DWORD [ypos], edi
 		valid_move:
+
+	inc DWORD [xpos]
+	call usleep
 	jmp		game_loop
 	game_loop_end:
 
