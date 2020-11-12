@@ -24,6 +24,8 @@
 %define DOWNCHAR 's'
 %define RIGHTCHAR 'd'
 
+%define SLEEP_SPEED 100000
+
 
 segment .data
 
@@ -56,8 +58,14 @@ segment .bss
 	xpos	resd	1
 	ypos	resd	1
 
+	;Each of these will have a 1 or a 0 depending on where the snake is
+	;If the snake has 1 in the nth position, the snake has a cell at the nth position
 	snake_x resd 100
 	snake_y resd 100
+
+	;Velocities
+	x_speed resd 1
+	y_speed resd 1
 
 segment .text
 
@@ -77,6 +85,7 @@ segment .text
 	extern	fgetc
 	extern	fclose
 	extern usleep
+	extern fcntl
 
 main:
 	enter	0,0
@@ -108,40 +117,11 @@ main:
 		call	render
 
 		; get an action from the user
-		call	getchar
+		call	nonblocking_getchar ;getchar
 
-		; store the current position
-		; we will test if the new position is legal
-		; if not, we will restore these
-		mov		esi, [xpos]
-		mov		edi, [ypos]
+		cmp al, -1
+		jne char_typed
 
-		; choose what to do
-		cmp		eax, EXITCHAR
-		je		game_loop_end
-		cmp		eax, UPCHAR
-		je 		move_up
-		cmp		eax, LEFTCHAR
-		je		move_left
-		cmp		eax, DOWNCHAR
-		je		move_down
-		cmp		eax, RIGHTCHAR
-		je		move_right
-		jmp		input_end			; or just do nothing
-
-		; move the player according to the input character
-		move_up:
-			dec		DWORD [ypos]
-			jmp		input_end
-		move_left:
-			dec		DWORD [xpos]
-			jmp		input_end
-		move_down:
-			inc		DWORD [ypos]
-			jmp		input_end
-		move_right:
-			inc		DWORD [xpos]
-		input_end:
 
 		; (W * y) + x = pos
 
@@ -157,9 +137,66 @@ main:
 			mov		DWORD [ypos], edi
 		valid_move:
 
-	inc DWORD [xpos]
-	call usleep
-	jmp		game_loop
+		; inc DWORD [xpos]
+		;Move the player here
+		mov esi, DWORD [y_speed]
+		mov edi, DWORD [x_speed]
+
+		add DWORD [ypos], esi
+		add DWORD [xpos], edi
+
+		;Sleep for sleep speed in order to not render as quickly
+		push SLEEP_SPEED
+		call usleep
+		add esp, 4
+
+		jmp		game_loop
+
+		; store the current position
+		; we will test if the new position is legal
+		; if not, we will restore these
+		mov		esi, [xpos]
+		mov		edi, [ypos]
+
+		char_typed:
+			; choose what to do
+			cmp		al, EXITCHAR
+			je		game_loop_end
+			cmp		al, UPCHAR
+			je 		move_up
+			cmp		al, LEFTCHAR
+			je		move_left
+			cmp		al, DOWNCHAR
+			je		move_down
+			cmp		al, RIGHTCHAR
+			je		move_right
+			jmp		input_end			; or just do nothing
+
+			; move the player according to the input character
+			move_up:
+				; dec		DWORD [ypos]
+				mov DWORD [y_speed], -1
+				mov DWORD [x_speed], 0
+				jmp		input_end
+			move_left:
+				; dec		DWORD [xpos]
+				mov DWORD [x_speed], -1
+				mov DWORD [y_speed], 0
+				jmp		input_end
+			move_down:
+				; inc		DWORD [ypos]
+				mov DWORD [y_speed], 1
+				mov DWORD [x_speed], 0
+				jmp		input_end
+			move_right:
+				; inc		DWORD [xpos]
+				mov DWORD [x_speed], 1
+				mov DWORD [y_speed], 0
+				jmp input_end
+			input_end:
+
+
+	jmp game_loop
 	game_loop_end:
 
 	; restore old terminal functionality
@@ -332,3 +369,61 @@ render:
 	mov		esp, ebp
 	pop		ebp
 	ret
+
+; === FUNCTION ===
+nonblocking_getchar:
+
+; returns -1 on no-data
+; returns char on succes
+
+; magic values
+%define F_GETFL 3
+%define F_SETFL 4
+%define O_NONBLOCK 2048
+%define STDIN 0
+
+	push	ebp
+	mov		ebp, esp
+
+	; single int used to hold flags
+	; single character (aligned to 4 bytes) return
+	sub		esp, 8
+
+	; get current stdin flags
+	; flags = fcntl(stdin, F_GETFL, 0)
+	push	0
+	push	F_GETFL
+	push	STDIN
+	call	fcntl
+	add		esp, 12
+	mov		DWORD [ebp-4], eax
+
+	; set non-blocking mode on stdin
+	; fcntl(stdin, F_SETFL, flags | O_NONBLOCK)
+	or		DWORD [ebp-4], O_NONBLOCK
+	push	DWORD [ebp-4]
+	push	F_SETFL
+	push	STDIN
+	call	fcntl
+	add		esp, 12
+
+	call	getchar
+	mov		DWORD [ebp-8], eax
+
+	; restore blocking mode
+	; fcntl(stdin, F_SETFL, flags ^ O_NONBLOCK
+	xor		DWORD [ebp-4], O_NONBLOCK
+	push	DWORD [ebp-4]
+	push	F_SETFL
+	push	STDIN
+	call	fcntl
+	add		esp, 12
+
+	mov		eax, DWORD [ebp-8]
+
+	mov		esp, ebp
+	pop		ebp
+	ret
+
+
+; === FUNCTION ===
