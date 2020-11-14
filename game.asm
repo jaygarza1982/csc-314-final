@@ -14,8 +14,8 @@
 
 ; the player starting position.
 ; top left is considered (0,0)
-%define STARTX 20
-%define STARTY 10
+%define STARTX 5
+%define STARTY 5
 
 ; these keys do things
 %define EXITCHAR 'x'
@@ -87,10 +87,42 @@ segment .text
 	extern usleep
 	extern fcntl
 
+snake_x_1:
+	pusha
+	mov ebp, esp
+
+	mov DWORD [xpos], ecx
+
+	popa
+	mov esp, ebp
+	ret
+
+snake_y_1:
+	pusha
+	mov ebp, esp
+
+	mov DWORD [ypos], ecx
+
+	popa
+	mov esp, ebp
+	ret
+
 main:
 	enter	0,0
 	pusha
 	;***************CODE STARTS HERE***************************
+
+
+	; Set snake_x and snake_y to start pos
+	; Set 3 snake cells contigious in memoryq
+	mov DWORD [snake_x + 4 * STARTX], 1
+	mov DWORD [snake_y + 4 * STARTY], 1
+	
+	mov DWORD [snake_x + 4 * STARTX + 4], 1
+	mov DWORD [snake_y + 4 * STARTY + 4], 1
+
+	mov DWORD [snake_x + 4 * STARTX + 8], 1
+	mov DWORD [snake_y + 4 * STARTY + 8], 1
 
 	; put the terminal in raw mode so the game works nicely
 	call	raw_mode_on
@@ -123,27 +155,49 @@ main:
 		jne char_typed
 
 
-		; (W * y) + x = pos
+		;Move and draw player
+		calc_player:
+			; (W * y) + x = pos
+			; compare the current position to the wall character
+			; mov ecx, 0
+			; calc_loop:
+				;Get if snake coord is 1 or 0
+				; mov ebx, DWORD [snake_x + 4 * ecx]
+				; mov edx, DWORD [snake_y + 4 * ecx]
 
-		; compare the current position to the wall character
-		mov		eax, WIDTH
-		mul		DWORD [ypos]
-		add		eax, [xpos]
-		lea		eax, [board + eax]
-		cmp		BYTE [eax], WALL_CHAR
-		jne		valid_move
-			; opps, that was an invalid move, reset
-			mov		DWORD [xpos], esi
-			mov		DWORD [ypos], edi
-		valid_move:
+				; cmp ebx, 0
+				; je snake_x_isnt_1
+				; snake_x_is_1:
+				; 	call snake_x_1
+				; snake_x_isnt_1:
 
-		; inc DWORD [xpos]
-		;Move the player here
-		mov esi, DWORD [y_speed]
-		mov edi, DWORD [x_speed]
+				; cmp edx, 0
+				; je snake_y_isnt_1
+				; snake_y_is_1:
+				; 	call snake_y_1
+				; snake_y_isnt_1:
 
-		add DWORD [ypos], esi
-		add DWORD [xpos], edi
+				mov		eax, WIDTH
+				mul		DWORD [ypos]
+				add		eax, [xpos]
+				lea		eax, [board + eax]
+				cmp		BYTE [eax], WALL_CHAR
+				jne		valid_move
+					; opps, that was an invalid move, reset
+					mov		DWORD [xpos], esi
+					mov		DWORD [ypos], edi
+				valid_move:
+
+				;Move the player here
+				mov esi, DWORD [y_speed]
+				mov edi, DWORD [x_speed]
+
+				add DWORD [ypos], esi
+				add DWORD [xpos], edi
+
+				; inc ecx
+				; cmp ecx, 2
+				; jle calc_loop
 
 		;Sleep for sleep speed in order to not render as quickly
 		push SLEEP_SPEED
@@ -324,26 +378,54 @@ render:
 		x_loop_start:
 		cmp		DWORD [ebp-8], WIDTH
 		je 		x_loop_end
+			
+			mov ecx, 0
+			mov DWORD [xpos], 0
+			mov DWORD [ypos], 0
+			length_loop_start:
+				cmp ecx, 10
+				je length_loop_end
 
-			; check if (xpos,ypos)=(x,y)
-			mov		eax, [xpos]
-			cmp		eax, DWORD [ebp-8]
-			jne		print_board
-			mov		eax, [ypos]
-			cmp		eax, DWORD [ebp-4]
-			jne		print_board
-				; if both were equal, print the player
-				push	PLAYER_CHAR
-				jmp		print_end
-			print_board:
-				; otherwise print whatever's in the buffer
-				mov		eax, [ebp-4]
-				mov		ebx, WIDTH
-				mul		ebx
-				add		eax, [ebp-8]
-				mov		ebx, 0
-				mov		bl, BYTE [board + eax]
-				push	ebx
+				mov eax, DWORD [snake_x + 4 * ecx]
+				cmp eax, 1
+				jne x_not_1
+
+				x_1:
+					call x_is_1
+				x_not_1:
+
+				mov eax, DWORD [snake_y + 4 * ecx]
+				cmp eax, 1
+				jne y_not_1
+				
+				y_1:
+					call y_is_1
+				y_not_1:
+
+
+				; check if (xpos,ypos)=(x,y)
+				mov		eax, [xpos]
+				cmp		eax, DWORD [ebp-8]
+				jne		print_board
+				mov		eax, [ypos]
+				cmp		eax, DWORD [ebp-4]
+				jne		print_board
+					; if both were equal, print the player
+					push	PLAYER_CHAR
+					jmp		print_end
+				print_board:
+					; otherwise print whatever's in the buffer
+					mov		eax, [ebp-4]
+					mov		ebx, WIDTH
+					mul		ebx
+					add		eax, [ebp-8]
+					mov		ebx, 0
+					mov		bl, BYTE [board + eax]
+					push	ebx
+				
+				inc ecx
+				jmp length_loop_start
+			length_loop_end:
 			print_end:
 			call	putchar
 			add		esp, 4
@@ -427,3 +509,23 @@ nonblocking_getchar:
 
 
 ; === FUNCTION ===
+
+x_is_1:
+	push ebp
+	mov ebp, esp
+
+	mov DWORD [xpos], ecx
+
+	mov esp, ebp
+	pop ebp
+	ret
+
+y_is_1:
+	push ebp
+	mov ebp, esp
+
+	mov DWORD [ypos], ecx
+
+	mov		esp, ebp
+	pop		ebp
+	ret
