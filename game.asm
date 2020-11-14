@@ -87,26 +87,6 @@ segment .text
 	extern usleep
 	extern fcntl
 
-snake_x_1:
-	pusha
-	mov ebp, esp
-
-	mov DWORD [xpos], ecx
-
-	popa
-	mov esp, ebp
-	ret
-
-snake_y_1:
-	pusha
-	mov ebp, esp
-
-	mov DWORD [ypos], ecx
-
-	popa
-	mov esp, ebp
-	ret
-
 main:
 	enter	0,0
 	pusha
