@@ -12,6 +12,9 @@
 %define HEIGHT 20
 %define WIDTH 40
 
+;Size of snake array
+%define SNAKE_SIZE 100
+
 ; the player starting position.
 ; top left is considered (0,0)
 %define STARTX 5
@@ -60,8 +63,8 @@ segment .bss
 
 	;Each of these will have a 1 or a 0 depending on where the snake is
 	;If the snake has 1 in the nth position, the snake has a cell at the nth position
-	snake_x resd 100
-	snake_y resd 100
+	snake_x resd SNAKE_SIZE
+	snake_y resd SNAKE_SIZE
 
 	;Velocities
 	x_speed resd 1
@@ -99,10 +102,16 @@ main:
 	mov DWORD [snake_y + 4 * STARTY], 1
 	
 	mov DWORD [snake_x + 4 * STARTX + 4], 1
-	mov DWORD [snake_y + 4 * STARTY + 4], 1
+	mov DWORD [snake_y + 4 * STARTY + 0], 1
 
 	mov DWORD [snake_x + 4 * STARTX + 8], 1
-	mov DWORD [snake_y + 4 * STARTY + 8], 1
+	mov DWORD [snake_y + 4 * STARTY + 0], 1
+
+	; call find_last_x_1
+	; push eax
+	; call putchar
+	; here:
+	; jmp here
 
 	; put the terminal in raw mode so the game works nicely
 	call	raw_mode_on
@@ -363,7 +372,7 @@ render:
 			mov DWORD [xpos], 0
 			mov DWORD [ypos], 0
 			length_loop_start:
-				cmp ecx, 10
+				cmp ecx, SNAKE_SIZE
 				je length_loop_end
 
 				mov eax, DWORD [snake_x + 4 * ecx]
@@ -505,6 +514,61 @@ y_is_1:
 	mov ebp, esp
 
 	mov DWORD [ypos], ecx
+
+	mov		esp, ebp
+	pop		ebp
+	ret
+
+;Puts the index of the first 1 in snake_x into eax
+find_first_x_1:
+	push ebp
+	mov ebp, esp
+
+	;for (ecx = 0; ecx < SNAKE_SIZE; ecx++)
+	mov ecx, 0
+	first_1_x_loop_start:
+		cmp ecx, SNAKE_SIZE
+		je first_1_x_loop_end
+
+		;Move current snake x into eax
+		;We will compare to 1, if it is 1, we will stop
+		mov eax, DWORD [snake_x + 4 * ecx]
+		cmp eax, 1
+		je first_1_x_loop_end
+
+		inc ecx
+		jmp first_1_x_loop_start
+	first_1_x_loop_end:
+
+	;Put our index into eax
+	mov eax, ecx
+
+	mov		esp, ebp
+	pop		ebp
+	ret
+
+;Puts the index of the last 1 in snake_x into eax
+find_last_x_1:
+	push ebp
+	mov ebp, esp
+
+	;for (ecx = SNAKE_SIZE; ecx >= 0; ecx--)
+	mov ecx, SNAKE_SIZE
+	last_1_x_loop_start:
+		cmp ecx, 0
+		je last_1_x_loop_end
+
+		;Move current snake x into eax
+		;We will compare to 1, if it is 1, we will stop
+		mov eax, DWORD [snake_x + 4 * ecx]
+		cmp eax, 1
+		je last_1_x_loop_end
+
+		dec ecx
+		jmp last_1_x_loop_start
+	last_1_x_loop_end:
+
+	mov eax, ecx
 
 	mov		esp, ebp
 	pop		ebp
