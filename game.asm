@@ -26,6 +26,7 @@
 %define LEFTCHAR 'a'
 %define DOWNCHAR 's'
 %define RIGHTCHAR 'd'
+%define BREAKCHAR 'b'
 
 %define SLEEP_SPEED 100000
 
@@ -63,7 +64,11 @@ segment .bss
 
 	;Each of these will have a 1 or a 0 depending on where the snake is
 	;If the snake has 1 in the nth position, the snake has a cell at the nth position
+
+	;memory watch 0x56558394
 	snake_x resd SNAKE_SIZE
+
+	;memory watch 0x56558524
 	snake_y resd SNAKE_SIZE
 
 	;Velocities
@@ -99,19 +104,17 @@ main:
 	; Set snake_x and snake_y to start pos
 	; Set 3 snake cells contigious in memoryq
 	mov DWORD [snake_x + 4 * STARTX], 1
-	mov DWORD [snake_y + 4 * STARTY], 1
+	mov DWORD [snake_y + 4 * STARTY], 3
 	
 	mov DWORD [snake_x + 4 * STARTX + 4], 1
-	mov DWORD [snake_y + 4 * STARTY + 0], 1
+	mov DWORD [snake_y + 4 * STARTY + 0], 3
 
 	mov DWORD [snake_x + 4 * STARTX + 8], 1
-	mov DWORD [snake_y + 4 * STARTY + 0], 1
+	mov DWORD [snake_y + 4 * STARTY + 0], 3
 
-	; call find_last_x_1
-	; push eax
-	; call putchar
-	; here:
-	; jmp here
+	mov DWORD [y_speed], 1
+
+	; call find_last_y_1
 
 	; put the terminal in raw mode so the game works nicely
 	call	raw_mode_on
@@ -146,26 +149,6 @@ main:
 
 		;Move and draw player
 		calc_player:
-			; (W * y) + x = pos
-			; compare the current position to the wall character
-			; mov ecx, 0
-			; calc_loop:
-				;Get if snake coord is 1 or 0
-				; mov ebx, DWORD [snake_x + 4 * ecx]
-				; mov edx, DWORD [snake_y + 4 * ecx]
-
-				; cmp ebx, 0
-				; je snake_x_isnt_1
-				; snake_x_is_1:
-				; 	call snake_x_1
-				; snake_x_isnt_1:
-
-				; cmp edx, 0
-				; je snake_y_isnt_1
-				; snake_y_is_1:
-				; 	call snake_y_1
-				; snake_y_isnt_1:
-
 				mov		eax, WIDTH
 				mul		DWORD [ypos]
 				add		eax, [xpos]
@@ -198,37 +181,35 @@ main:
 					x_1_player_move:
 						;Get first x 1 val, mark it zero, mark last x val + 1 as 1
 						call find_first_x_1
-						mov DWORD [snake_x + 4 * eax], 0
+						dec DWORD [snake_x + 4 * eax]
 						call find_last_x_1
 						inc eax
-						mov DWORD [snake_x + 4 * eax], 1
+						inc DWORD [snake_x + 4 * eax]
 						jmp player_move_check_end
 					x_neg_1_player_move:
 						;Get last x val, mark 0, mark first x val -1 as 1
 						call find_last_x_1
-						mov DWORD [snake_x + 4 * eax], 0
+						dec DWORD [snake_x + 4 * eax]
 						call find_first_x_1
 						dec eax
-						mov DWORD [snake_x + 4 * eax], 1
+						inc DWORD [snake_x + 4 * eax]
 						jmp player_move_check_end
 					y_1_player_move:
 						;Get first y val, mark 0, mark last y val + 1 as 1
 						call find_first_y_1
-						mov DWORD [snake_y + 4 * eax], 0
+						dec DWORD [snake_y + 4 * eax]
 						call find_last_y_1
 						inc eax
-						mov DWORD [snake_y + 4 * eax], 1
+						inc DWORD [snake_y + 4 * eax]
 						jmp player_move_check_end
 					y_neg_1_player_move:
+						call find_last_y_1
+						dec DWORD [snake_y + 4 * eax]
+						call find_first_y_1
+						dec eax
+						inc DWORD [snake_y + 4 * eax]
 						jmp player_move_check_end
 				player_move_check_end:
-
-				; add DWORD [ypos], esi
-				; add DWORD [xpos], edi
-
-				; inc ecx
-				; cmp ecx, 2
-				; jle calc_loop
 
 		;Sleep for sleep speed in order to not render as quickly
 		push SLEEP_SPEED
@@ -255,6 +236,8 @@ main:
 			je		move_down
 			cmp		al, RIGHTCHAR
 			je		move_right
+			cmp al, BREAKCHAR
+			je break_move
 			jmp		input_end			; or just do nothing
 
 			; move the player according to the input character
@@ -277,6 +260,8 @@ main:
 				; inc		DWORD [xpos]
 				mov DWORD [x_speed], 1
 				mov DWORD [y_speed], 0
+				jmp input_end
+			break_move:
 				jmp input_end
 			input_end:
 
@@ -418,16 +403,16 @@ render:
 				je length_loop_end
 
 				mov eax, DWORD [snake_x + 4 * ecx]
-				cmp eax, 1
-				jne x_not_1
+				cmp eax, 0
+				je x_not_1
 
 				x_1:
 					call x_is_1
 				x_not_1:
 
 				mov eax, DWORD [snake_y + 4 * ecx]
-				cmp eax, 1
-				jne y_not_1
+				cmp eax, 0
+				je y_not_1
 				
 				y_1:
 					call y_is_1
@@ -575,8 +560,8 @@ find_first_x_1:
 		;Move current snake x into eax
 		;We will compare to 1, if it is 1, we will stop
 		mov eax, DWORD [snake_x + 4 * ecx]
-		cmp eax, 1
-		je first_1_x_loop_end
+		cmp eax, 0
+		jne first_1_x_loop_end
 
 		inc ecx
 		jmp first_1_x_loop_start
@@ -603,8 +588,8 @@ find_last_x_1:
 		;Move current snake x into eax
 		;We will compare to 1, if it is 1, we will stop
 		mov eax, DWORD [snake_x + 4 * ecx]
-		cmp eax, 1
-		je last_1_x_loop_end
+		cmp eax, 0
+		jne last_1_x_loop_end
 
 		dec ecx
 		jmp last_1_x_loop_start
@@ -630,8 +615,8 @@ find_first_y_1:
 		;Move current snake y into eax
 		;We will compare to 1, if it is 1, we will stop
 		mov eax, DWORD [snake_y + 4 * ecx]
-		cmp eax, 1
-		je first_1_y_loop_end
+		cmp eax, 0
+		jne first_1_y_loop_end
 
 		inc ecx
 		jmp first_1_y_loop_start
@@ -644,7 +629,7 @@ find_first_y_1:
 	pop		ebp
 	ret
 
-;Puts the index of the last 1 in snake_x into eax
+;Puts the index of the last 1 in snake_y into eax
 find_last_y_1:
 	push ebp
 	mov ebp, esp
@@ -658,8 +643,8 @@ find_last_y_1:
 		;Move current snake x into eax
 		;We will compare to 1, if it is 1, we will stop
 		mov eax, DWORD [snake_y + 4 * ecx]
-		cmp eax, 1
-		je last_1_y_loop_end
+		cmp eax, 0
+		jne last_1_y_loop_end
 
 		dec ecx
 		jmp last_1_y_loop_start

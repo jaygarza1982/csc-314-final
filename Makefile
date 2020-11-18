@@ -7,4 +7,4 @@ clean:
 
 game: game.asm
 	nasm -f elf game.asm
-	gcc -g -m32 -o game game.o
+	gcc -m32 -o game game.o
