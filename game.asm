@@ -174,6 +174,15 @@ main:
 				player_move_check_start:
 					;We are moving right
 					x_1_player_move:
+						;Get snake length - 1
+						mov eax, 2 ;Snake length get logic would go here
+						; inc DWORD [snake_x + 4 * eax] ;Move it
+						mov ebx, DWORD [snake_x + 4 * eax] ;Save value before we call our remove function
+						;Remove the 0th x value in the snake array
+						call remove_last_x
+						;Increment far right position
+						inc ebx
+						mov DWORD [snake_x + 4 * eax], ebx
 						jmp player_move_check_end
 					x_neg_1_player_move:
 						jmp player_move_check_end
