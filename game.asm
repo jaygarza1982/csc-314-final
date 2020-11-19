@@ -101,20 +101,15 @@ main:
 	;***************CODE STARTS HERE***************************
 
 
-	; Set snake_x and snake_y to start pos
-	; Set 3 snake cells contigious in memoryq
-	mov DWORD [snake_x + 4 * STARTX], 1
-	mov DWORD [snake_y + 4 * STARTY], 3
-	
-	mov DWORD [snake_x + 4 * STARTX + 4], 1
-	; mov DWORD [snake_y + 4 * STARTY + 0], 3
+	; Set snake_x and snake_y starting position
+	mov DWORD [snake_x + 4 * 0], 5
+	mov DWORD [snake_y + 4 * 0], 5
 
-	mov DWORD [snake_x + 4 * STARTX + 8], 1
-	; mov DWORD [snake_y + 4 * STARTY + 0], 3
+	mov DWORD [snake_x + 4 * 1], 6
+	mov DWORD [snake_y + 4 * 1], 5
 
-	; mov DWORD [y_speed], 1
-
-	; call find_last_y_1
+	mov DWORD [snake_x + 4 * 2], 7
+	mov DWORD [snake_y + 4 * 2], 5
 
 	; put the terminal in raw mode so the game works nicely
 	call	raw_mode_on
@@ -179,53 +174,12 @@ main:
 				player_move_check_start:
 					;We are moving right
 					x_1_player_move:
-						;Dec first y
-						; call find_first_y_1
-						dec DWORD [snake_y + 4 * eax]
-
-						;Get first x 1 val, mark it zero, mark last x val + 1 as 1
-						; call find_first_x_1
-						dec DWORD [snake_x + 4 * eax]
-						; call find_last_x_1
-						inc eax
-						inc DWORD [snake_x + 4 * eax]
-
-						;Add last y
-						; call find_last_y_1
-						inc DWORD [snake_y + 4 * eax]
-
 						jmp player_move_check_end
 					x_neg_1_player_move:
-						;Get last x val, mark 0, mark first x val -1 as 1
-						; call find_last_x_1
-						dec DWORD [snake_x + 4 * eax]
-						; call find_first_x_1
-						dec eax
-						inc DWORD [snake_x + 4 * eax]
 						jmp player_move_check_end
 					y_1_player_move:
-						;Dec first x
-						; call find_first_x_1
-						dec DWORD [snake_x + 4 * eax]
-
-						;Get first y val, mark 0, mark last y val + 1 as 1
-						; call find_first_y_1
-						dec DWORD [snake_y + 4 * eax]
-						; call find_last_y_1
-						inc eax
-						inc DWORD [snake_y + 4 * eax]
-
-						;Add last x
-						; call find_last_x_1
-						inc DWORD [snake_x + 4 * eax]
-
 						jmp player_move_check_end
 					y_neg_1_player_move:
-						; call find_last_y_1
-						dec DWORD [snake_y + 4 * eax]
-						; call find_first_y_1
-						dec eax
-						inc DWORD [snake_y + 4 * eax]
 						jmp player_move_check_end
 				player_move_check_end:
 				mov DWORD [x_speed], 0
@@ -554,7 +508,8 @@ x_is_1:
 	push ebp
 	mov ebp, esp
 
-	mov DWORD [xpos], ecx
+	mov eax, DWORD [snake_x + 4 * ecx]
+	mov DWORD [xpos], eax
 
 	mov esp, ebp
 	pop ebp
@@ -564,8 +519,34 @@ y_is_1:
 	push ebp
 	mov ebp, esp
 
-	mov DWORD [ypos], ecx
+	mov eax, DWORD [snake_y + 4 * ecx]
+	mov DWORD [ypos], eax
 
 	mov		esp, ebp
 	pop		ebp
+	ret
+
+;Removes the last x value in the snake array 
+remove_last_x:
+	push ebp
+	mov ebp, esp
+
+	mov ecx, 0
+	remove_last_x_loop_start:
+		cmp ecx, SNAKE_SIZE - 1
+		je remove_last_x_loop_end
+
+		;snake_x[ecx] = snake_x[ecx + 1]
+		
+		mov edx, ecx
+		inc edx
+		mov edi, DWORD [snake_x + 4 * edx]
+		mov DWORD [snake_x + 4 * ecx], edi
+
+		inc ecx
+		jmp remove_last_x_loop_start
+	remove_last_x_loop_end:
+
+	mov esp, ebp
+	pop ebp
 	ret
