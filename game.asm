@@ -180,50 +180,50 @@ main:
 					;We are moving right
 					x_1_player_move:
 						;Dec first y
-						call find_first_y_1
+						; call find_first_y_1
 						dec DWORD [snake_y + 4 * eax]
 
 						;Get first x 1 val, mark it zero, mark last x val + 1 as 1
-						call find_first_x_1
+						; call find_first_x_1
 						dec DWORD [snake_x + 4 * eax]
-						call find_last_x_1
+						; call find_last_x_1
 						inc eax
 						inc DWORD [snake_x + 4 * eax]
 
 						;Add last y
-						call find_last_y_1
+						; call find_last_y_1
 						inc DWORD [snake_y + 4 * eax]
 
 						jmp player_move_check_end
 					x_neg_1_player_move:
 						;Get last x val, mark 0, mark first x val -1 as 1
-						call find_last_x_1
+						; call find_last_x_1
 						dec DWORD [snake_x + 4 * eax]
-						call find_first_x_1
+						; call find_first_x_1
 						dec eax
 						inc DWORD [snake_x + 4 * eax]
 						jmp player_move_check_end
 					y_1_player_move:
 						;Dec first x
-						call find_first_x_1
+						; call find_first_x_1
 						dec DWORD [snake_x + 4 * eax]
 
 						;Get first y val, mark 0, mark last y val + 1 as 1
-						call find_first_y_1
+						; call find_first_y_1
 						dec DWORD [snake_y + 4 * eax]
-						call find_last_y_1
+						; call find_last_y_1
 						inc eax
 						inc DWORD [snake_y + 4 * eax]
 
 						;Add last x
-						call find_last_x_1
+						; call find_last_x_1
 						inc DWORD [snake_x + 4 * eax]
 
 						jmp player_move_check_end
 					y_neg_1_player_move:
-						call find_last_y_1
+						; call find_last_y_1
 						dec DWORD [snake_y + 4 * eax]
-						call find_first_y_1
+						; call find_first_y_1
 						dec eax
 						inc DWORD [snake_y + 4 * eax]
 						jmp player_move_check_end
@@ -565,118 +565,6 @@ y_is_1:
 	mov ebp, esp
 
 	mov DWORD [ypos], ecx
-
-	mov		esp, ebp
-	pop		ebp
-	ret
-
-;Puts the index of the first 1 in snake_x into eax
-find_first_x_1:
-	push ebp
-	mov ebp, esp
-
-	;for (ecx = 0; ecx < SNAKE_SIZE; ecx++)
-	mov ecx, 0
-	first_1_x_loop_start:
-		cmp ecx, SNAKE_SIZE
-		je first_1_x_loop_end
-
-		;Move current snake x into eax
-		;We will compare to 1, if it is 1, we will stop
-		mov eax, DWORD [snake_x + 4 * ecx]
-		cmp eax, 0
-		jne first_1_x_loop_end
-
-		inc ecx
-		jmp first_1_x_loop_start
-	first_1_x_loop_end:
-
-	;Put our index into eax
-	mov eax, ecx
-
-	mov		esp, ebp
-	pop		ebp
-	ret
-
-;Puts the index of the last 1 in snake_x into eax
-find_last_x_1:
-	push ebp
-	mov ebp, esp
-
-	;for (ecx = SNAKE_SIZE - 1; ecx >= 0; ecx--)
-	mov ecx, SNAKE_SIZE
-	dec ecx
-	last_1_x_loop_start:
-		cmp ecx, 0
-		je last_1_x_loop_end
-
-		;Move current snake x into eax
-		;We will compare to 1, if it is 1, we will stop
-		mov eax, DWORD [snake_x + 4 * ecx]
-		cmp eax, 0
-		jne last_1_x_loop_end
-
-		dec ecx
-		jmp last_1_x_loop_start
-	last_1_x_loop_end:
-
-	mov eax, ecx
-
-	mov		esp, ebp
-	pop		ebp
-	ret
-
-;Puts the index of the first 1 in snake_y into eax
-find_first_y_1:
-	push ebp
-	mov ebp, esp
-
-	;for (ecx = 0; ecx < SNAKE_SIZE; ecx++)
-	mov ecx, 0
-	first_1_y_loop_start:
-		cmp ecx, SNAKE_SIZE
-		je first_1_y_loop_end
-
-		;Move current snake y into eax
-		;We will compare to 1, if it is 1, we will stop
-		mov eax, DWORD [snake_y + 4 * ecx]
-		cmp eax, 0
-		jne first_1_y_loop_end
-
-		inc ecx
-		jmp first_1_y_loop_start
-	first_1_y_loop_end:
-
-	;Put our index into eax
-	mov eax, ecx
-
-	mov		esp, ebp
-	pop		ebp
-	ret
-
-;Puts the index of the last 1 in snake_y into eax
-find_last_y_1:
-	push ebp
-	mov ebp, esp
-
-	;for (ecx = SNAKE_SIZE - 1; ecx >= 0; ecx--)
-	mov ecx, SNAKE_SIZE
-	dec ecx
-	last_1_y_loop_start:
-		cmp ecx, 0
-		je last_1_y_loop_end
-
-		;Move current snake x into eax
-		;We will compare to 1, if it is 1, we will stop
-		mov eax, DWORD [snake_y + 4 * ecx]
-		cmp eax, 0
-		jne last_1_y_loop_end
-
-		dec ecx
-		jmp last_1_y_loop_start
-	last_1_y_loop_end:
-
-	mov eax, ecx
 
 	mov		esp, ebp
 	pop		ebp
