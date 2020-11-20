@@ -75,6 +75,9 @@ segment .bss
 	x_speed resd 1
 	y_speed resd 1
 
+	;Pointer of last active cell
+	snake_end resd 1
+
 segment .text
 
 	global	main
@@ -109,7 +112,9 @@ main:
 	mov DWORD [snake_y + 4 * 1], 5
 
 	mov DWORD [snake_x + 4 * 2], 7
-	mov DWORD [snake_y + 4 * 2], 5
+	mov DWORD [snake_y + 4 * 2], 6
+
+	mov DWORD [snake_end], 2
 
 	; put the terminal in raw mode so the game works nicely
 	call	raw_mode_on
@@ -175,14 +180,25 @@ main:
 					;We are moving right
 					x_1_player_move:
 						;Get snake length - 1
-						mov eax, 2 ;Snake length get logic would go here
-						; inc DWORD [snake_x + 4 * eax] ;Move it
-						mov ebx, DWORD [snake_x + 4 * eax] ;Save value before we call our remove function
+						mov eax, DWORD [snake_end]
+
+						;Save values before we call our remove function
+						mov ebx, DWORD [snake_x + 4 * eax]
+						mov esi, DWORD [snake_y + 4 * eax]
+
 						;Remove the 0th x value in the snake array
 						call remove_last_x
+
+						;Remove the 0th y value in the snake array
+						call remove_last_y
+
 						;Increment far right position
 						inc ebx
 						mov DWORD [snake_x + 4 * eax], ebx
+
+						;Set y back to value
+						mov DWORD [snake_y + 4 * eax], esi
+
 						jmp player_move_check_end
 					x_neg_1_player_move:
 						jmp player_move_check_end
@@ -555,6 +571,31 @@ remove_last_x:
 		inc ecx
 		jmp remove_last_x_loop_start
 	remove_last_x_loop_end:
+
+	mov esp, ebp
+	pop ebp
+	ret
+
+;Removes the last y value in the snake array 
+remove_last_y:
+	push ebp
+	mov ebp, esp
+
+	mov ecx, 0
+	remove_last_y_loop_start:
+		cmp ecx, SNAKE_SIZE - 1
+		je remove_last_x_loop_end
+
+		;snake_y[ecx] = snake_y[ecx + 1]
+		
+		mov edx, ecx
+		inc edx
+		mov edi, DWORD [snake_y + 4 * edx]
+		mov DWORD [snake_y + 4 * ecx], edi
+
+		inc ecx
+		jmp remove_last_y_loop_start
+	remove_last_y_loop_end:
 
 	mov esp, ebp
 	pop ebp
