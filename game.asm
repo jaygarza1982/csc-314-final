@@ -28,7 +28,7 @@
 %define RIGHTCHAR 'd'
 %define BREAKCHAR 'b'
 
-%define SLEEP_SPEED 100000
+%define SLEEP_SPEED 120000
 
 
 segment .data
