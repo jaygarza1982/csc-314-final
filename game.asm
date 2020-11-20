@@ -28,7 +28,7 @@
 %define RIGHTCHAR 'd'
 %define BREAKCHAR 'b'
 
-%define SLEEP_SPEED 200000
+%define SLEEP_SPEED 100000
 
 
 segment .data
@@ -201,14 +201,71 @@ main:
 
 						jmp player_move_check_end
 					x_neg_1_player_move:
+						;Get snake length - 1
+						mov eax, DWORD [snake_end]
+
+						;Save values before we call our remove function
+						mov ebx, DWORD [snake_x + 4 * eax]
+						mov esi, DWORD [snake_y + 4 * eax]
+
+						;Remove the 0th x value in the snake array
+						call remove_last_x
+
+						;Remove the 0th y value in the snake array
+						call remove_last_y
+
+						;Increment far right position
+						dec ebx
+						mov DWORD [snake_x + 4 * eax], ebx
+						
+						;Set y back to value
+						mov DWORD [snake_y + 4 * eax], esi
 						jmp player_move_check_end
 					y_1_player_move:
+						;Get snake length - 1
+						mov eax, DWORD [snake_end]
+
+						;Save values before we call our remove function
+						mov ebx, DWORD [snake_x + 4 * eax]
+						mov esi, DWORD [snake_y + 4 * eax]
+
+						;Remove the 0th x value in the snake array
+						call remove_last_x
+
+						;Remove the 0th y value in the snake array
+						call remove_last_y
+
+						;Set x back to value
+						mov DWORD [snake_x + 4 * eax], ebx
+						
+						;Increment y position
+						inc esi
+						mov DWORD [snake_y + 4 * eax], esi
 						jmp player_move_check_end
 					y_neg_1_player_move:
+						;Get snake length - 1
+						mov eax, DWORD [snake_end]
+
+						;Save values before we call our remove function
+						mov ebx, DWORD [snake_x + 4 * eax]
+						mov esi, DWORD [snake_y + 4 * eax]
+
+						;Remove the 0th x value in the snake array
+						call remove_last_x
+
+						;Remove the 0th y value in the snake array
+						call remove_last_y
+
+						;Set x back to value
+						mov DWORD [snake_x + 4 * eax], ebx
+						
+						;Decrement y position
+						dec esi
+						mov DWORD [snake_y + 4 * eax], esi
 						jmp player_move_check_end
 				player_move_check_end:
-				mov DWORD [x_speed], 0
-				mov DWORD [y_speed], 0
+				; mov DWORD [x_speed], 0
+				; mov DWORD [y_speed], 0
 
 		;Sleep for sleep speed in order to not render as quickly
 		push SLEEP_SPEED
