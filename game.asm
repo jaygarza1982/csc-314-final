@@ -7,6 +7,7 @@
 ; how to represent everything
 %define WALL_CHAR '#'
 %define PLAYER_CHAR 'O'
+%define APPLE_CHAR 'A'
 
 ; the size of the game screen in characters
 %define HEIGHT 20
@@ -78,6 +79,10 @@ segment .bss
 	;Pointer of last active cell
 	snake_end resd 1
 
+	;Apple x and y
+	apple_x resd 1
+	apple_y resd 1
+
 segment .text
 
 	global	main
@@ -103,6 +108,9 @@ main:
 	pusha
 	;***************CODE STARTS HERE***************************
 
+	; Position for apple x and y
+	mov DWORD [apple_x], 3
+	mov DWORD [apple_y], 3
 
 	; Set snake_x and snake_y starting position
 	mov DWORD [snake_x + 4 * 0], 5
@@ -264,8 +272,7 @@ main:
 						mov DWORD [snake_y + 4 * eax], esi
 						jmp player_move_check_end
 				player_move_check_end:
-				; mov DWORD [x_speed], 0
-				; mov DWORD [y_speed], 0
+				call check_apple_collision
 
 		;Sleep for sleep speed in order to not render as quickly
 		push SLEEP_SPEED
@@ -482,13 +489,27 @@ render:
 				; check if (xpos,ypos)=(x,y)
 				mov		eax, [xpos]
 				cmp		eax, DWORD [ebp-8]
-				jne		print_board
+				jne		no_player_cell
 				mov		eax, [ypos]
 				cmp		eax, DWORD [ebp-4]
-				jne		print_board
+				jne		no_player_cell
 					; if both were equal, print the player
 					push	PLAYER_CHAR
 					jmp		print_end
+
+				no_player_cell:
+
+				apple_render_check:
+					mov eax, [apple_x]
+					cmp eax, DWORD [ebp - 8]
+					jne print_board
+					mov eax, [apple_y]
+					cmp eax, DWORD [ebp - 4]
+					jne print_board
+
+					push APPLE_CHAR
+					jmp print_end
+
 				print_board:
 					; otherwise print whatever's in the buffer
 					mov		eax, [ebp-4]
@@ -653,6 +674,51 @@ remove_last_y:
 		inc ecx
 		jmp remove_last_y_loop_start
 	remove_last_y_loop_end:
+
+	mov esp, ebp
+	pop ebp
+	ret
+
+;Check if the player start is the same as the apple x and y
+check_apple_collision:
+	push ebp
+	mov ebp, esp
+
+	sub esp, 20
+
+	;Set registers so that they are pointing to value of last x and y
+	mov eax, DWORD [snake_end]
+	mov ebx, eax
+	mov DWORD [ebp - 4], eax
+	mov eax, DWORD [snake_x + 4 * ebx]
+	mov DWORD [ebp - 8], eax
+	mov eax, DWORD [snake_y + 4 * ebx]
+	mov DWORD [ebp - 12], eax
+	mov eax, DWORD [apple_x]
+	mov DWORD [ebp - 16], eax
+	mov eax, DWORD [apple_y]
+	mov DWORD [ebp - 20], eax
+
+	;Move snake x to eax, move apple x to ebx
+	mov eax, DWORD [ebp - 8]
+	mov ebx, DWORD [ebp - 16]
+	cmp eax, ebx
+	jne no_collision
+
+	;Move snake y to eax
+	mov eax, DWORD [ebp - 12]
+	mov ebx, DWORD [ebp - 20]
+	cmp eax, ebx
+	jne no_collision
+
+	collision:
+	;TODO: make snake not teleport to top
+	;We should probably remove 
+	inc DWORD [snake_end]
+
+	no_collision:
+	
+	add esp, 20
 
 	mov esp, ebp
 	pop ebp
