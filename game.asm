@@ -725,9 +725,33 @@ check_apple_collision:
 	jne no_collision
 
 	collision:
-	;TODO: make snake not teleport to top
-	;We should probably remove 
+	;Increment the snake end pointer, or size
 	inc DWORD [snake_end]
+
+	;Add a cell to the end of the snake at the same position of the current last cell
+	;Get previous snake end
+	mov ebx, DWORD [snake_end]
+	dec ebx
+
+	;Previous x goes in ebp - 4
+	mov eax, DWORD [snake_x + 4 * ebx]
+	mov DWORD [ebp - 4], eax
+
+	;Previous y goes in ebp - 8
+	mov eax, DWORD [snake_y + 4 * ebx]
+	mov DWORD [ebp - 8], eax
+
+	;Copy both x and y to current snake end
+	;Inc ebx so it is pointing to new current snake end
+	inc ebx
+
+	;Copy previous x into new x location
+	mov eax, DWORD [ebp - 4]
+	mov DWORD [snake_x + 4 * ebx], eax
+
+	;Copy previous y into new y location
+	mov eax, DWORD [ebp - 8]
+	mov DWORD [snake_y + 4 * ebx], eax
 
 	;Apple position gets set to a random position
 	call rand_apple_position
