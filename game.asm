@@ -102,11 +102,24 @@ segment .text
 	extern	fclose
 	extern usleep
 	extern fcntl
+	extern time
+	extern srand
+	extern rand
 
 main:
 	enter	0,0
 	pusha
 	;***************CODE STARTS HERE***************************
+
+	;Seed the random number generator
+
+	;srand(time(null))
+	push 0
+	call time
+	add esp, 4
+	push eax
+	call srand
+	add esp, 4
 
 	; Position for apple x and y
 	mov DWORD [apple_x], 3
@@ -716,9 +729,38 @@ check_apple_collision:
 	;We should probably remove 
 	inc DWORD [snake_end]
 
+	;Apple position gets set to a random position
+	call rand_apple_position
+
 	no_collision:
 	
 	add esp, 20
+
+	mov esp, ebp
+	pop ebp
+	ret
+
+rand_apple_position:
+	push ebp
+	mov ebp, esp
+
+	call rand
+	cdq
+	mov ebx, WIDTH
+	sub ebx, 2
+	idiv ebx
+	add edx, 1
+
+	mov DWORD [apple_x], edx
+
+	call rand
+	cdq
+	mov ebx, HEIGHT
+	sub ebx, 2
+	idiv ebx
+	add edx, 1
+
+	mov DWORD [apple_y], edx
 
 	mov esp, ebp
 	pop ebp
